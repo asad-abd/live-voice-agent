@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LiveKit Test</title>
+    <script src="livekit-client.min.js"></script>
+</head>
+<body>
+    <h1>LiveKit Loading Test</h1>
+    <div id="result"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const result = document.getElementById('result');
+            if (typeof LiveKit !== 'undefined') {
+                result.innerHTML = '✅ LiveKit loaded successfully!<br>Version: ' + LiveKit.version;
+                console.log('LiveKit object:', LiveKit);
+            } else {
+                result.innerHTML = '❌ LiveKit not loaded';
+                console.error('LiveKit not available');
+            }
+        });
+    </script>
+</body>
+</html>

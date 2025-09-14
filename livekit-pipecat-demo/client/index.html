@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveKit + Pipecat Demo</title>
+    <!-- LiveKit library with multiple fallback strategies -->
+    <script>
+        // Multiple loading strategies with fallbacks
+        let livekitLoadAttempts = 0;
+        const maxAttempts = 3;
+        
+        function loadLiveKit() {
+            livekitLoadAttempts++;
+            
+            // Strategy 1: Try CDN
+            if (livekitLoadAttempts === 1) {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/livekit-client@2.1.2/dist/livekit-client.umd.min.js';
+                script.onload = () => {
+                    console.log('✅ LiveKit loaded from CDN');
+                    window.LiveKitReady = typeof LiveKit !== 'undefined';
+                    if (!window.LiveKitReady) setTimeout(loadLiveKit, 100);
+                };
+                script.onerror = () => {
+                    console.warn('CDN failed, trying alternative...');
+                    setTimeout(loadLiveKit, 100);
+                };
+                document.head.appendChild(script);
+            }
+            // Strategy 2: Try local file
+            else if (livekitLoadAttempts === 2) {
+                const script = document.createElement('script');
+                script.src = 'livekit-client.umd.js';
+                script.onload = () => {
+                    console.log('✅ LiveKit loaded from local file');
+                    window.LiveKitReady = typeof LiveKit !== 'undefined';
+                    if (!window.LiveKitReady) setTimeout(loadLiveKit, 100);
+                };
+                script.onerror = () => {
+                    console.warn('Local file failed, trying unpkg...');
+                    setTimeout(loadLiveKit, 100);
+                };
+                document.head.appendChild(script);
+            }
+            // Strategy 3: Try unpkg CDN
+            else if (livekitLoadAttempts === 3) {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/livekit-client@2.1.2/dist/livekit-client.umd.js';
+                script.onload = () => {
+                    console.log('✅ LiveKit loaded from unpkg');
+                    window.LiveKitReady = typeof LiveKit !== 'undefined';
+                };
+                script.onerror = () => {
+                    console.error('❌ All LiveKit loading strategies failed');
+                    window.LiveKitReady = false;
+                };
+                document.head.appendChild(script);
+            }
+        }
+        
+        // Start loading immediately
+        loadLiveKit();
+        
+        // Fallback check after page load
+        window.addEventListener('load', () => {
+            window.LiveKitReady = typeof LiveKit !== 'undefined';
+            console.log('Final LiveKit status:', window.LiveKitReady);
+            if (window.LiveKitReady) {
+                console.log('LiveKit object available:', !!LiveKit);
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .status.disconnected { background-color: #fee; color: #c53030; }
+        .status.connecting { background-color: #fef5e7; color: #d69e2e; }
+        .status.connected { background-color: #f0fff4; color: #38a169; }
+        
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #3182ce;
+        }
+        
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        audio {
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .log {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+        
+        .log-entry.info { color: #2d3748; }
+        .log-entry.success { color: #38a169; }
+        .log-entry.warning { color: #d69e2e; }
+        .log-entry.error { color: #e53e3e; }
+        
+        .latency-info {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .instructions {
+            background: #f0f4ff;
+            border: 1px solid #c3dafe;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ LiveKit + Pipecat Demo</h1>
+        
+        <div class="instructions">
+            <h3>Simple POC Demo - No API Keys Required!</h3>
+            <ol>
+                <li>Click "Join Room and Enable Mic" to connect</li>
+                <li>Speak into your microphone</li>
+                <li>The agent will respond with scripted messages ending in "...got it"</li>
+                <li>Test barge-in by interrupting the agent</li>
+                <li>Watch the orchestration in the logs below</li>
+            </ol>
+            <p><strong>Note:</strong> This is a pure orchestration demo - no external AI services needed!</p>
+        </div>
+        
+        <div id="status" class="status disconnected">
+            Disconnected - Click to join room
+        </div>
+        
+        <div class="controls">
+            <button id="joinBtn">Join Room and Enable Mic</button>
+            <button id="leaveBtn" disabled>Leave Room</button>
+            <button id="muteBtn" disabled>Mute</button>
+        </div>
+        
+        <audio id="remoteAudio" autoplay controls style="display: none;"></audio>
+        
+        <div class="latency-info">
+            <h3>Latency Measurements:</h3>
+            <div id="latencyStats">
+                <p>Average Latency: <span id="avgLatency">-- ms</span></p>
+                <p>Last Latency: <span id="lastLatency">-- ms</span></p>
+                <p>Measurements: <span id="measurementCount">0</span></p>
+            </div>
+        </div>
+        
+        <div class="log" id="logContainer">
+            <div class="log-entry info">📋 Event log will appear here...</div>
+        </div>
+    </div>
+    
+    <script src="client.js"></script>
+</body>
+</html>

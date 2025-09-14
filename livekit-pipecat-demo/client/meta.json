@@ -1,0 +1,13 @@
+{
+  "name": "LiveKit + Pipecat Demo",
+  "version": "1.0.0",
+  "description": "Simple POC demonstrating LiveKit + Pipecat orchestration",
+  "dependencies": {
+    "livekit-client": "^2.1.2"
+  },
+  "config": {
+    "livekit_url": "ws://localhost:7880",
+    "token_server_url": "http://localhost:8080/token",
+    "room_name": "test-room"
+  }
+}
