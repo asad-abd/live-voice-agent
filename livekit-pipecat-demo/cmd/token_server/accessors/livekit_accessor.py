@@ -72,7 +72,7 @@ def configure_room_grants(
         can_publish_data=True
     )
     
-    return token.with_grants(grants).with_ttl(ttl_hours * 3600)
+    return token.with_grants(grants).with_ttl(timedelta(hours=ttl_hours))
 
 def generate_jwt_token(token: api.AccessToken) -> str:
     """

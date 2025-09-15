@@ -1,22 +1,22 @@
-# LiveKit + Pipecat Demo - ULTRA SIMPLE
+# LiveKit + Pipecat Demo with React Client - ULTRA SIMPLE
 # Just 2 commands: setup + demo
 
-.PHONY: setup demo stop
+.PHONY: setup demo demo-quick stop
 
 # Default target shows help
-help: ## Show available commands  
-	@echo "🚀 LiveKit + Pipecat Demo - ULTRA SIMPLE"
+help: ## Show available commands
+	@echo "LiveKit + Pipecat Demo with React Client - ULTRA SIMPLE"
 	@echo ""
-	@echo "💡 Only 2 commands needed:"
-	@echo ""
-	@echo "  make setup    - Install everything (run once)"
-	@echo "  make demo     - Start demo (browser opens automatically)"
+	@echo "  make setup           - Install everything (run once)"
+	@echo "  make demo            - Start demo (browser opens automatically)"
+	@echo "  make demo-quick - Start demo without LiveKit (assumes already running)"
 	@echo ""
 	@echo "🛑 To stop:"
-	@echo "  make stop     - Stop all services"
+	@echo "  make stop            - Stop all services"
 	@echo ""
 	@echo "⚡ First time: make setup && make demo"
 	@echo "⚡ Next time:  make demo"
+	@echo "⚡ LiveKit running: make demo-quick"
 
 setup: ## Complete setup - install everything
 	@echo "🏗️  Setting up LiveKit + Pipecat Demo..."
@@ -42,6 +42,10 @@ setup: ## Complete setup - install everything
 	@./venv/bin/python -m pip install --upgrade pip --quiet
 	@cd agent && ../venv/bin/python -m pip install -r requirements.txt --quiet
 	@cd cmd/token_server && ../../venv/bin/python -m pip install -r requirements.txt --quiet
+
+	# Install React client dependencies
+	@echo "📦 Installing React client dependencies..."
+	@cd client-react && npm install --silent
 	
 	# Test imports
 	@echo "🧪 Testing installations..."
@@ -58,41 +62,90 @@ demo: ## Start everything and open browser
 	# Stop any existing services
 	@echo "🧹 Cleaning up..."
 	@-lsof -ti:3000,7880,8080 | xargs kill -9 2>/dev/null || true
-	@-pkill -f "spawn_agent.py\|main.py\|http.server 3000" 2>/dev/null || true
+	@-pkill -f "spawn_agent.py\|main.py\|http.server 3000\|react-scripts start" 2>/dev/null || true
 	@-docker stop $$(docker ps -q --filter "publish=7880") 2>/dev/null || true
 	
-	# Start LiveKit server
+	# Start LiveKit server (backend first)
 	@echo "📡 Starting LiveKit server..."
 	@if command -v docker-compose >/dev/null 2>&1; then \
-		docker-compose up -d 2>/dev/null; \
+		docker-compose up -d; \
 	else \
-		docker compose up -d 2>/dev/null; \
+		docker compose up -d; \
 	fi
 	
-	# Wait for LiveKit to be ready
-	@echo "⏳ Waiting for LiveKit server..."
-	@sleep 5
-	@if docker ps | grep -q livekit-server; then \
-		echo "✅ LiveKit server running!"; \
-	else \
-		echo "❌ LiveKit server not found"; \
-		docker ps; \
-		exit 1; \
-	fi
+	# Wait for LiveKit to be ready (HTTP OK)
+	@echo "⏳ Waiting for LiveKit server (http://localhost:7880)..."
+	@attempts=0; \
+	until curl -fsS http://localhost:7880 >/dev/null 2>&1; do \
+		attempts=$$((attempts+1)); \
+		if [ $$attempts -gt 40 ]; then \
+			echo "❌ LiveKit did not become ready"; \
+			docker logs $$((docker ps -q --filter name=livekit* | head -n1)) 2>/dev/null || true; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done; \
+	echo "✅ LiveKit server ready!"
 	
 	# Start token server
 	@echo "🔑 Starting token server..."
-	@cd cmd/token_server && ../../venv/bin/python main.py > /dev/null 2>&1 &
+	@cd cmd/token_server && ../../venv/bin/python main.py &
 	@sleep 2
 	
-	# Start client web server
-	@echo "🌐 Starting client web server..."
-	@cd client && ../venv/bin/python -m http.server 3000 > /dev/null 2>&1 &
+	# Start agent (before frontend so Deepgram/LiveKit is ready)
+	@echo "🤖 Starting Pipecat agent..."
+	@cd agent && ../venv/bin/python spawn_agent.py &
+	@sleep 3
+
+	# Start React client last
+	@echo "🌐 Starting React client..."
+	@cd client-react && npm start &
+	@sleep 10
+	
+	# Open browser
+	@echo ""
+	@echo "🎉 Demo ready!"
+	@echo "🌐 Opening browser at http://localhost:3000..."
+	@if command -v open >/dev/null 2>&1; then \
+		open http://localhost:3000; \
+	elif command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open http://localhost:3000; \
+	else \
+		echo "📱 Manually open: http://localhost:3000"; \
+	fi
+	@echo ""
+	@echo "🎤 Click 'Join Room and Enable Mic' to test the React client!"
+	@echo "🛑 To stop: make stop"
+
+demo-quick: ## Start demo without LiveKit (assumes LiveKit already running)
+	@echo "🚀 Starting Pipecat Demo (LiveKit assumed running)..."
+	
+	# Check if LiveKit is already running
+	@if ! docker ps | grep -q livekit-server; then \
+		echo "⚠️  LiveKit server not detected. Consider running 'make demo' instead."; \
+		echo "📡 Continuing anyway..."; \
+	else \
+		echo "✅ LiveKit server detected!"; \
+	fi
+	
+	# Stop any existing services (except LiveKit)
+	@echo "🧹 Cleaning up existing services..."
+	@-lsof -ti:3000,8080 | xargs kill -9 2>/dev/null || true
+	@-pkill -f "spawn_agent.py\|main.py\|http.server 3000\|react-scripts start" 2>/dev/null || true
+	
+	# Start token server
+	@echo "🔑 Starting token server..."
+	@cd cmd/token_server && ../../venv/bin/python main.py &
 	@sleep 2
+	
+	# Start React client
+	@echo "🌐 Starting React client..."
+	@cd client-react && npm start &
+	@sleep 10
 	
 	# Start agent
 	@echo "🤖 Starting Pipecat agent..."
-	@cd agent && ../venv/bin/python spawn_agent.py > /dev/null 2>&1 &
+	@cd agent && ../venv/bin/python spawn_agent.py &
 	@sleep 3
 	
 	# Open browser
@@ -107,13 +160,13 @@ demo: ## Start everything and open browser
 		echo "📱 Manually open: http://localhost:3000"; \
 	fi
 	@echo ""
-	@echo "🎤 Click 'Join Room and Enable Mic' to test!"
+	@echo "🎤 Click 'Join Room and Enable Mic' to test the React client!"
 	@echo "🛑 To stop: make stop"
 
 stop: ## Stop all services
 	@echo "🛑 Stopping all services..."
 	@-lsof -ti:3000,7880,8080 | xargs kill -9 2>/dev/null || true
-	@-pkill -f "spawn_agent.py\|main.py\|http.server 3000" 2>/dev/null || true
+	@-pkill -f "spawn_agent.py\|main.py\|http.server 3000\|react-scripts start" 2>/dev/null || true
 	@if command -v docker-compose >/dev/null 2>&1; then \
 		docker-compose down 2>/dev/null || true; \
 	else \

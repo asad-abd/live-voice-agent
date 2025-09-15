@@ -1,13 +1,11 @@
 services:
   livekit:
     image: livekit/livekit-server:latest
-    command: --dev
+    command: --dev --bind 0.0.0.0 --config /etc/livekit.yaml
+    restart: unless-stopped
     ports:
       - "7880:7880/tcp"  # WebSocket for connections
       - "7881:7881/udp"  # RTP/UDP for media
       - "7801:7801/tcp"  # HTTP for API (optional)
-    network_mode: host  # Use host network for local dev to avoid NAT issues
-    environment:
-      - LIVEKIT_CONFIG=
     volumes:
-      - ./livekit.yaml:/etc/livekit.yaml
+      - ./livekit.yaml:/etc/livekit.yaml:ro

@@ -1,2 +1,7 @@
 pipecat-ai[livekit,silero]
 livekit-api
+torch
+torchaudio
+numpy
+asyncio
+deepgram-sdk
