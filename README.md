@@ -13,7 +13,6 @@ make setup && make demo
 
 - **[Demo README](livekit-pipecat-demo/README.md)** - Setup and usage instructions
 - **[Technical Reflection](livekit-pipecat-demo/reflection.md)** - LiveKit vs Pipecat analysis
-- **[Assignment Details](Assignment.md)** - Original requirements
 
 ## What's Implemented
 

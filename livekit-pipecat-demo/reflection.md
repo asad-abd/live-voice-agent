@@ -1,15 +1,25 @@
 # LiveKit vs Pipecat Reflection
 
-## What LiveKit Does Well
-Handles WebRTC complexities, low-latency audio transport (~100ms), scaling, and network resilience. Docker setup is straightforward and token auth works well.
+## LiveKit Pros
+- Low-latency WebRTC transport (~100ms)
+- Handles complex media routing automatically
+- Production-ready scaling and resilience
+- Simple Docker setup for development
 
-## What Pipecat Does Well  
-Pipeline architecture for voice agents, built-in AI integrations (Deepgram, OpenAI), conversation flow with barge-in support, and VAD handling.
+## LiveKit Cons
+- No built-in AI capabilities
+- Requires separate token management
+- Complex self-hosting setup
+- Limited to media transport only
 
-## Limitations When Combined
-Latency stack-up (browser → LiveKit → Pipecat → APIs), multi-service complexity, external API dependencies, and debugging across systems.
+## Pipecat Pros
+- Pipeline architecture for voice agents
+- Built-in AI service integrations
+- Natural conversation flow with barge-in
+- Multimodal processing support
 
-## Production Split
-**LiveKit**: Media transport, WebRTC, scaling, security  
-**Pipecat**: AI logic, conversation flow, business rules  
-Keep them loosely coupled with separate deployments and circuit breakers.
+## Pipecat Cons
+- External API dependencies (cost/latency)
+- Complex multi-service debugging
+- Resource-intensive operations
+- Requires technical expertise
